@@ -19,6 +19,7 @@ const Devices = () => {
     const [bulkSsidInput, setBulkSsidInput] = useState('');
     const [knownSsids, setKnownSsids] = useState([]);
     const [bulkErrors, setBulkErrors] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -285,6 +286,7 @@ const Devices = () => {
     };
 
     const submitBulk = async () => {
+        setIsSubmitting(true);
         try {
             const devicesToAdd = bulkParsed.map(p => ({
                 mac_address: p.mac_address,
@@ -297,11 +299,10 @@ const Devices = () => {
             const { success, failed, added, errors } = res.data.results;
 
             if (failed === 0) {
-                // All success
-                alert(`Successfully added ${success} devices.`);
+                // All success - close modal and show notification
                 closeBulk();
                 fetchDevices();
-                // fetchSsids(); // Assuming this is a function to refresh known SSIDs
+                alert(`Successfully added ${success} devices.`);
             } else {
                 // Partial failure logic
                 const successfulMacs = new Set(added.map(d => d.mac));
@@ -314,12 +315,26 @@ const Devices = () => {
                 setBulkText(remainingLines.join('\n'));
                 setBulkErrors(errors || []);
                 setBulkStep('input');
-                alert(`Processed ${devicesToAdd.length} devices.\nSuccess: ${success}\nFailed: ${failed}\nPlease fix the errors and try again.`);
                 fetchDevices();
+                alert(`Processed ${devicesToAdd.length} devices.\nSuccess: ${success}\nFailed: ${failed}\nPlease fix the errors and try again.`);
             }
         } catch (err) {
             alert(err.response?.data?.error || 'Failed to process bulk upload');
+        } finally {
+            setIsSubmitting(false);
         }
+    };
+
+    const openBulkModal = () => {
+        // Reset all bulk states
+        setBulkStep('input');
+        setBulkText('');
+        setBulkParsed([]);
+        setSelectedIndices([]);
+        setBulkSsidInput('');
+        setBulkErrors([]);
+        setIsSubmitting(false);
+        setShowBulkModal(true);
     };
 
     const closeBulk = () => {
@@ -392,7 +407,7 @@ const Devices = () => {
                 <button className="glass-button" style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={openAddModal}>
                     <Plus size={20} /> Add Device
                 </button>
-                <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '12px' }} onClick={() => setShowBulkModal(true)}>
+                <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '12px' }} onClick={openBulkModal}>
                     <Upload size={20} /> Bulk Add
                 </button>
                 <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '12px' }} onClick={handleExport}>
@@ -790,10 +805,12 @@ const Devices = () => {
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }}>
-                                    <button className="glass-button secondary" onClick={() => setBulkStep('input')}>Back to Input</button>
+                                    <button className="glass-button secondary" onClick={() => setBulkStep('input')} disabled={isSubmitting}>Back to Input</button>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <button className="glass-button secondary" onClick={closeBulk}>Cancel</button>
-                                        <button className="glass-button" onClick={submitBulk}>Register {bulkParsed.length} Devices</button>
+                                        <button className="glass-button secondary" onClick={closeBulk} disabled={isSubmitting}>Cancel</button>
+                                        <button className="glass-button" onClick={submitBulk} disabled={isSubmitting}>
+                                            {isSubmitting ? 'Registering...' : `Register ${bulkParsed.length} Devices`}
+                                        </button>
                                     </div>
                                 </div>
                             </div>

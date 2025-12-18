@@ -1,4 +1,4 @@
-# WiFi Admin Portal (V0.6)
+# WiFi Admin Portal (V0.7)
 
 A web-based administration portal for managing a FreeRADIUS server. Administrators can easily manage users, devices, and view network statistics through a modern dashboard.
 

@@ -2,6 +2,16 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [0.7] - 2025-12-18
+
+### Improved
+- Bulk Add modal now resets state when opened
+- Added loading indicator during bulk device registration
+- Buttons disabled during submission to prevent duplicate requests
+- Modal auto-closes after successful registration
+
+---
+
 ## [0.6] - 2025-12-18
 
 ### Added
