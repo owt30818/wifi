@@ -2,6 +2,20 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [0.8] - 2025-12-18
+
+### Added
+- Helmet middleware for security headers (HSTS, X-Frame-Options, etc.)
+- Rate limiting: 10 login attempts per 15 minutes, 100 API requests per minute
+- Configurable CORS origins via `CORS_ORIGINS` environment variable
+
+### Security
+- Protection against brute-force login attacks
+- XSS protection headers
+- Clickjacking protection
+
+---
+
 ## [0.7] - 2025-12-18
 
 ### Improved
