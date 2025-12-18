@@ -12,9 +12,24 @@ export const AuthProvider = ({ children }) => {
         const username = localStorage.getItem('username');
         if (token && username) {
             setUser({ username, token });
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Ideally logic for bearer
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
         setLoading(false);
+
+        // Axios Interceptor for 401
+        const interceptor = axios.interceptors.response.use(
+            response => response,
+            error => {
+                if (error.response && error.response.status === 401) {
+                    logout();
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
     }, []);
 
     const login = async (username, password) => {
@@ -23,6 +38,7 @@ export const AuthProvider = ({ children }) => {
             const { token, username: userN } = res.data;
             localStorage.setItem('token', token);
             localStorage.setItem('username', userN);
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             setUser({ username: userN, token });
             return true;
         } catch (err) {

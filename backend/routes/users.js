@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../db');
 
 // Middleware would be here
-const verifyToken = (req, res, next) => next();
+const verifyToken = require('../middleware/auth');
 
 /**
  * GET /api/users
