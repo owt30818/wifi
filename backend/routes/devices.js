@@ -1,14 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-
-// Middleware to verify JWT (simplified for this context)
-// ideally this should be in a separate middleware file
-const verifyToken = (req, res, next) => {
-    // For simplicity in this demo, let's skip strict verification or add it later
-    // In production, verify the Authorization header
-    next();
-};
+const verifyToken = require('../middleware/auth');
 
 const normalizeMac = (input) => {
     const clean = input.replace(/[^a-fA-F0-9]/g, '').toUpperCase();

@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const verifyToken = require('../middleware/auth');
 
-router.get('/stats', async (req, res) => {
+router.get('/stats', verifyToken, async (req, res) => {
     try {
         // 1. Count Total Managed Devices
         const [totalDevs] = await db.execute('SELECT COUNT(*) as count FROM managed_devices');

@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 
 // Middleware
-const verifyToken = (req, res, next) => next();
+const verifyToken = require('../middleware/auth');
 
 /**
  * GET /api/acess-points
