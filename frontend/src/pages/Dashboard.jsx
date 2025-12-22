@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -80,12 +81,14 @@ const Dashboard = () => {
         <div>
             <h1>Dashboard</h1>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '2rem' }}>
-                <StatCard
-                    title="Online Users"
-                    value={stats.online_users}
-                    icon={<Users size={32} color="#10b981" />}
-                    subtext={`${stats.ap_distribution?.length || 0} APs active`}
-                />
+                <Link to="/online-users" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <StatCard
+                        title="Online Users"
+                        value={stats.online_users}
+                        icon={<Users size={32} color="#10b981" />}
+                        subtext={`${stats.ap_distribution?.length || 0} APs active`}
+                    />
+                </Link>
                 <StatCard
                     title="Total Devices"
                     value={stats.total_devices}

@@ -2,6 +2,17 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [0.8.2] - 2025-12-22
+
+### Added
+- **Online Users Tab/Page**: Restored the standalone Online Users page for real-time monitoring.
+
+### Fixed
+- **Database Collation Mismatch**: Resolved "Illegal mix of collations" errors in the Online Users query when joining across tables with different encoding (utf8mb4_general_ci vs utf8mb4_unicode_ci).
+- **Online Users Rendering**: Fixed a bug where the Online Users page appeared blank due to missing backend routes and potential null crashes.
+
+---
+
 ## [0.8.1] - 2025-12-22
 
 ### Added
