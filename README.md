@@ -1,21 +1,24 @@
-# WiFi Admin Portal (V0.8)
+# WiFi Admin Portal (V0.8.1)
 
 A web-based administration portal for managing a FreeRADIUS server. Administrators can easily manage users, devices, and view network statistics through a modern dashboard.
 
 ## Features
 
 - **Dashboard**: Real-time network statistics (Online users, Device distribution, etc.)
+- **Advanced Device Search**:
+    - Segmentation by MAC Address, Alias, or Group
+    - Automatic MAC address formatting for precise filtering
 - **Device Management**:
-    - Register/Block/Unblock devices (MAC Address)
+    - Register/Block/Unblock devices
     - Bulk Upload (CSV/Text)
     - Group management
     - Export to CSV
 - **User Management**: Manage portal admin users
-- **Access Points**: View AP status (derived from accounting data)
-- **Security**:
-    - JWT-based authentication
-    - bcrypt password hashing
-    - Protected API routes
+- **Access Points**: View AP status and active client counts
+- **UI/UX**:
+    - Modern Glassmorphism design
+    - Responsive Footer with API status and versioning
+    - Sticky footer across all administrative pages
 
 ## Technology Stack
 
@@ -80,11 +83,22 @@ Default admin credentials should be set up in the `portal_admins` table with a b
 
 ## Changelog
 
+### v0.8.1
+- Added **Advanced Device Search** with MAC, Alias, and Group segmentation
+- Added **Portal Footer** with API status and version tracking
+- Improved UI consistency for **Access Points** page
+- Fixed **Pagination bug** in the Devices list
+- Enabled automatic `created_at` refresh on device edits
+
+### v0.8
+- Security hardening: Helmet middleware and Rate limiting
+- Protection against brute-force login attacks
+- Configurable CORS origins
+
 ### v0.6
 - Implemented proper JWT verification middleware
 - Applied authentication to all protected API routes
 - Added auto-logout on token expiration (401 response)
-- Fixed React Router deprecation warnings
 
 ### v0.5
 - Initial release
