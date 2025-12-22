@@ -1,34 +1,37 @@
-# WiFi Admin Portal (V0.8)
+# WiFi Admin Portal (v0.8.2)
 
 A web-based administration portal for managing a FreeRADIUS server. Administrators can easily manage users, devices, and view network statistics through a modern dashboard.
 
 ## Features
 
 - **Dashboard**: Real-time network statistics (Online users, Device distribution, etc.)
+- **Online Users**: Real-time active session monitoring with AP/SSID details.
 - **Device Management**:
-    - Register/Block/Unblock devices (MAC Address)
-    - Bulk Upload (CSV/Text)
+    - **Advanced Search**: Filter by MAC, Alias, or Group.
+    - **Auto-Formatting**: Automatic MAC address input formatting.
+    - Register/Block/Unblock devices.
+    - Bulk Upload (CSV/Text) with loading indicators.
     - Group management
-    - Export to CSV
-- **User Management**: Manage portal admin users
-- **Access Points**: View AP status (derived from accounting data)
+- **User Management**: Manage portal admin users.
+- **Access Points**: View AP status and connected client counts.
 - **Security**:
-    - JWT-based authentication
-    - bcrypt password hashing
-    - Protected API routes
+    - JWT-based authentication with auto-logout.
+    - Rate limiting and security headers (Helmet).
+    - Configurable CORS origins.
+- **UI/UX**: Modern glassmorphism design with a persistent status footer.
 
 ## Technology Stack
 
-- **Frontend**: React (Vite), Custom CSS, Chart.js, Lucide Icons
+- **Frontend**: React (Vite), Vanilla CSS, Chart.js, Lucide Icons
 - **Backend**: Node.js (Express)
 - **Database**: MySQL (FreeRADIUS Schema)
-- **Authentication**: JWT (jsonwebtoken), bcrypt
+- **Authentication**: JWT, bcrypt
 
 ## Installation
 
 ### Prerequisites
 - Node.js (v18+)
-- MySQL Server (with FreeRADIUS schema installed)
+- MySQL Server (with FreeRADIUS schema)
 
 ### 1. Backend Setup
 Navigate to the `backend` directory and install dependencies:
@@ -38,7 +41,7 @@ cd backend
 npm install
 ```
 
-Create a `.env` file in the `backend` directory:
+Create a `.env` file:
 
 ```env
 PORT=3000
@@ -47,15 +50,10 @@ DB_USER=radius
 DB_PASSWORD=radiuspass
 DB_NAME=radius
 JWT_SECRET=your_secure_random_secret_key
+CORS_ORIGINS=http://localhost:3000
 ```
 
-> ⚠️ **Important**: Use a strong, random JWT_SECRET in production. Generate one with: `openssl rand -base64 32`
-
-Start the backend server:
-
-```bash
-node server.js
-```
+Start the server: `node server.js`
 
 ### 2. Frontend Setup
 Navigate to the `frontend` directory and install dependencies:
@@ -63,31 +61,28 @@ Navigate to the `frontend` directory and install dependencies:
 ```bash
 cd frontend
 npm install
-```
-
-Build for production:
-
-```bash
 npm run build
 ```
 
-The backend server is configured to serve the frontend static files from `frontend/dist`.
-
-## Usage
-Access the portal at `http://your-server-ip:3000`.
-
-Default admin credentials should be set up in the `portal_admins` table with a bcrypt-hashed password.
-
 ## Changelog
 
-### v0.6
-- Implemented proper JWT verification middleware
-- Applied authentication to all protected API routes
-- Added auto-logout on token expiration (401 response)
-- Fixed React Router deprecation warnings
+### v0.8.2
+- **Restored Online Users**: Standalone page for real-time session monitoring.
+- **SQL Fix**: Resolved collation mismatch in cross-table joins.
 
-### v0.5
-- Initial release
+### v0.8.1
+- **Advanced Search**: Category-based device searching.
+- **Footer**: Added persistent system status and version info.
+- **UI Alignment**: Consistent styling across all management pages.
+
+### v0.8
+- **Security Hardening**: Added Helmet, Rate Limiting, and CORS configuration.
+
+### v0.7
+- **UX Improvements**: Better Bulk Add modal with loading states and auto-close.
+
+### v0.6
+- **JWT Protection**: Implemented secure authentication across all routes.
 
 ## License
 MIT
