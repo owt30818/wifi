@@ -76,4 +76,38 @@ router.get('/status', verifyToken, async (req, res) => {
     });
 });
 
+/**
+ * GET /api/dashboard/online-users
+ * Fetch detailed active session information
+ */
+router.get('/online-users', verifyToken, async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                r.username,
+                r.callingstationid as mac_address,
+                r.calledstationid as ap_ssid,
+                r.nasipaddress,
+                r.framedipaddress as ip_address,
+                r.acctstarttime as start_time,
+                ap.name as ap_name,
+                SUBSTRING_INDEX(r.calledstationid, ':', -1) as ssid,
+                d.alias,
+                d.group_name,
+                d.status
+            FROM radacct r
+            LEFT JOIN access_points ap ON REPLACE(SUBSTRING_INDEX(r.calledstationid, ':', 1), '-', '') COLLATE utf8mb4_general_ci = REPLACE(ap.mac_address, '-', '') COLLATE utf8mb4_general_ci
+            LEFT JOIN managed_devices d ON r.callingstationid COLLATE utf8mb4_general_ci = d.mac_address COLLATE utf8mb4_general_ci
+            WHERE r.acctstoptime IS NULL
+            ORDER BY r.acctstarttime DESC
+        `;
+
+        const [rows] = await db.execute(query);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch online users' });
+    }
+});
+
 module.exports = router;

@@ -32,6 +32,7 @@ const Navbar = () => {
             <div style={{ display: 'flex', gap: '8px' }}>
                 <NavLink to="/" current={location.pathname} icon={<LayoutDashboard size={18} />}>Dashboard</NavLink>
                 <NavLink to="/devices" current={location.pathname} icon={<Smartphone size={18} />}>Devices</NavLink>
+                <NavLink to="/online-users" current={location.pathname} icon={<Users size={18} />}>Online Users</NavLink>
                 <NavLink to="/users" current={location.pathname} icon={<Users size={18} />}>Users</NavLink>
                 <NavLink to="/access-points" current={location.pathname} icon={<Router size={18} />}>Access Points</NavLink>
             </div>

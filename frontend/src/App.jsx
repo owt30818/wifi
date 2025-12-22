@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Devices from './pages/Devices';
 import Users from './pages/Users';
 import AccessPoints from './pages/AccessPoints';
+import OnlineUsers from './pages/OnlineUsers';
 import Footer from './components/Footer';
 
 const ProtectedRoute = ({ children }) => {
@@ -51,6 +52,11 @@ function App() {
           <Route path="/access-points" element={
             <ProtectedRoute>
               <Layout><AccessPoints /></Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/online-users" element={
+            <ProtectedRoute>
+              <Layout><OnlineUsers /></Layout>
             </ProtectedRoute>
           } />
         </Routes>
