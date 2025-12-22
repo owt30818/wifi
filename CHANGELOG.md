@@ -2,6 +2,22 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [0.8.1] - 2025-12-22
+
+### Added
+- New **Footer** component displaying copyright, version v0.8.1, and API connection status.
+- **Advanced Device Search**: Category-based search (MAC, Alias, Group) with selection dropdown.
+- **Auto-MAC Formatting** in device search for precise filtering.
+
+### Improved
+- **Added Date Refresh**: The `created_at` timestamp now updates whenever a device is edited.
+- **Access Points UI**: Aligned table layout, spacing, and glassmorphism styling with the Devices page.
+
+### Fixed
+- **Pagination Bug**: Resolved an issue where pagination buttons on the Devices page were non-functional.
+
+---
+
 ## [0.8] - 2025-12-18
 
 ### Added

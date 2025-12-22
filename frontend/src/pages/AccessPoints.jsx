@@ -79,36 +79,36 @@ const AccessPoints = () => {
                 </button>
             </div>
 
-            <div className="glass-panel">
-                <table className="glass-table">
+            <div className="glass-panel" style={{ overflow: 'hidden' }}>
+                <table className="glass-table" style={{ borderCollapse: 'separate', borderSpacing: '0 2px' }}>
                     <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>MAC Address</th>
-                            <th>Location</th>
-                            <th>Active Clients</th>
-                            <th>Actions</th>
+                        <tr style={{ fontSize: '0.85rem' }}>
+                            <th style={{ padding: '0.5rem 0.8rem' }}>Name</th>
+                            <th style={{ padding: '0.5rem 0.8rem' }}>MAC Address</th>
+                            <th style={{ padding: '0.5rem 0.8rem' }}>Location</th>
+                            <th style={{ padding: '0.5rem 0.8rem' }}>Active Clients</th>
+                            <th style={{ padding: '0.5rem 0.8rem' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {aps.map((ap, idx) => (
-                            <tr key={idx}>
-                                <td>
+                            <tr key={idx} style={{ background: 'transparent' }}>
+                                <td style={{ padding: '0.2rem 0.8rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <Router size={16} color={ap.id ? "#10b981" : "#94a3b8"} />
                                         <span style={{ fontWeight: ap.id ? '600' : 'normal' }}>{ap.name}</span>
                                         {!ap.id && <span style={{ fontSize: '0.8em', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '2px 6px', borderRadius: '4px' }}>New</span>}
                                     </div>
                                 </td>
-                                <td style={{ fontFamily: 'monospace' }}>{ap.mac_address}</td>
-                                <td>
+                                <td style={{ fontFamily: 'monospace', letterSpacing: '1px', padding: '0.2rem 0.8rem' }}>{ap.mac_address}</td>
+                                <td style={{ padding: '0.2rem 0.8rem' }}>
                                     {ap.location && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8' }}>
                                             <MapPin size={14} /> {ap.location}
                                         </div>
                                     )}
                                 </td>
-                                <td>
+                                <td style={{ padding: '0.2rem 0.8rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <span style={{
                                             display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%',
@@ -117,18 +117,26 @@ const AccessPoints = () => {
                                         {ap.active_clients}
                                     </div>
                                 </td>
-                                <td>
+                                <td style={{ padding: '0.2rem 0.8rem' }}>
                                     {ap.id ? (
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button className="glass-button secondary p-2" onClick={() => openEdit(ap)}>
-                                                <Edit2 size={16} />
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button
+                                                className="glass-button secondary"
+                                                style={{ padding: '4px', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                onClick={() => openEdit(ap)}
+                                            >
+                                                <Edit2 size={14} />
                                             </button>
-                                            <button className="glass-button danger p-2" onClick={() => handleDelete(ap.id)}>
-                                                <Trash2 size={16} />
+                                            <button
+                                                className="glass-button danger"
+                                                style={{ padding: '4px', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                onClick={() => handleDelete(ap.id)}
+                                            >
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
                                     ) : (
-                                        <button className="glass-button secondary" style={{ fontSize: '0.9em', padding: '4px 8px' }} onClick={() => openAdd(ap.mac_address)}>
+                                        <button className="glass-button secondary" style={{ fontSize: '0.85em', padding: '4px 12px' }} onClick={() => openAdd(ap.mac_address)}>
                                             Register
                                         </button>
                                     )}

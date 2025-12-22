@@ -22,6 +22,7 @@ const Devices = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchType, setSearchType] = useState('all'); // all | mac | alias | group
 
     // Pagination & Selection
     const [currentPage, setCurrentPage] = useState(1);
@@ -93,11 +94,23 @@ const Devices = () => {
         fetchSsids();
     }, []);
 
-    const sortedDevices = [...devices].filter(d =>
-        d.mac_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (d.alias && d.alias.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (d.group_name && d.group_name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const sortedDevices = [...devices].filter(d => {
+        if (!searchTerm) return true;
+        const term = searchTerm.toLowerCase();
+
+        if (searchType === 'mac') {
+            return d.mac_address.toLowerCase().includes(term);
+        } else if (searchType === 'alias') {
+            return d.alias && d.alias.toLowerCase().includes(term);
+        } else if (searchType === 'group') {
+            return d.group_name && d.group_name.toLowerCase().includes(term);
+        } else {
+            // "all" mode
+            return d.mac_address.toLowerCase().includes(term) ||
+                (d.alias && d.alias.toLowerCase().includes(term)) ||
+                (d.group_name && d.group_name.toLowerCase().includes(term));
+        }
+    });
 
     if (sortConfig.key) {
         sortedDevices.sort((a, b) => {
@@ -118,6 +131,11 @@ const Devices = () => {
     const totalPages = Math.ceil(sortedDevices.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentItems = sortedDevices.slice(startIndex, startIndex + itemsPerPage);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        setSelectedDeviceIds([]);
+    };
 
     const handleSave = async (e) => {
         e.preventDefault();
@@ -439,16 +457,37 @@ const Devices = () => {
                     </div>
 
                     {/* Search */}
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Search</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0 12px' }}>
-                            <Search size={18} color="#94a3b8" />
-                            <input
-                                placeholder="MAC or Alias..."
-                                style={{ border: 'none', background: 'transparent', padding: '10px 0', color: 'white', outline: 'none', width: '200px' }}
-                                value={searchTerm}
-                                onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                            />
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Search Type</label>
+                            <select
+                                className="glass-input"
+                                style={{ width: '100px', padding: '8px' }}
+                                value={searchType}
+                                onChange={e => { setSearchType(e.target.value); setSearchTerm(''); setCurrentPage(1); }}
+                            >
+                                <option value="all">All</option>
+                                <option value="mac">MAC</option>
+                                <option value="alias">Alias</option>
+                                <option value="group">Group</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>Search</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '0 12px' }}>
+                                <Search size={18} color="#94a3b8" />
+                                <input
+                                    placeholder={searchType === 'mac' ? "AA-BB-CC..." : "Search..."}
+                                    style={{ border: 'none', background: 'transparent', padding: '10px 0', color: 'white', outline: 'none', width: '200px' }}
+                                    value={searchTerm}
+                                    onChange={e => {
+                                        let val = e.target.value;
+                                        if (searchType === 'mac') val = formatMac(val);
+                                        setSearchTerm(val);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

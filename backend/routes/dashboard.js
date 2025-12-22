@@ -63,4 +63,17 @@ router.get('/stats', verifyToken, async (req, res) => {
     }
 });
 
+// Service Status Check
+router.get('/status', verifyToken, async (req, res) => {
+    const { exec } = require('child_process');
+
+    exec('systemctl is-active freeradius', (error, stdout) => {
+        const freeradiusStatus = stdout.trim() || 'unknown';
+        res.json({
+            freeradius: freeradiusStatus,
+            timestamp: new Date().toISOString()
+        });
+    });
+});
+
 module.exports = router;

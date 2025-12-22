@@ -1,0 +1,16 @@
+[Unit]
+Description=WiFi Admin Portal Backend
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=owt30818
+WorkingDirectory=/home/owt30818/wifi-admin-portal/backend
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

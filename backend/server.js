@@ -8,6 +8,7 @@ const deviceRoutes = require('./routes/devices');
 const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
 const accessPointsRouter = require('./routes/access_points');
+const portalRoutes = require('./routes/portal');
 
 dotenv.config();
 
@@ -53,7 +54,10 @@ const apiLimiter = rateLimit({
 
 app.use(express.json());
 
-// Routes
+// Public Routes (No JWT required)
+app.use('/portal', portalRoutes);
+
+// Protected Routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/devices', apiLimiter, deviceRoutes);
 app.use('/api/dashboard', apiLimiter, dashboardRoutes);

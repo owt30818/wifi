@@ -227,7 +227,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 
         // Update managed_devices
         await db.execute(
-            'UPDATE managed_devices SET mac_address = ?, alias = ?, group_name = ?, allowed_ssids = ? WHERE id = ?',
+            'UPDATE managed_devices SET mac_address = ?, alias = ?, group_name = ?, allowed_ssids = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?',
             [newMac, newAlias, newGroup, newSsids, id]
         );
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
-import { Users, ShieldAlert, Monitor, Router } from 'lucide-react';
+import { Users, ShieldAlert, Monitor, Router, Radio } from 'lucide-react';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
@@ -12,6 +12,9 @@ const Dashboard = () => {
         blocked_devices: 0,
         online_users: 0,
         ap_distribution: []
+    });
+    const [serviceStatus, setServiceStatus] = useState({
+        freeradius: 'unknown'
     });
 
     useEffect(() => {
@@ -23,9 +26,24 @@ const Dashboard = () => {
                 console.error(err);
             }
         };
+
+        const fetchStatus = async () => {
+            try {
+                const res = await axios.get('/api/dashboard/status');
+                setServiceStatus(res.data);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
         fetchStats();
+        fetchStatus();
+
         // Poll every 30 seconds
-        const interval = setInterval(fetchStats, 30000);
+        const interval = setInterval(() => {
+            fetchStats();
+            fetchStatus();
+        }, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -78,6 +96,13 @@ const Dashboard = () => {
                     value={stats.blocked_devices}
                     icon={<ShieldAlert size={32} color="#f43f5e" />}
                 />
+                <StatCard
+                    title="FreeRADIUS"
+                    value={serviceStatus.freeradius === 'active' ? 'Running' : 'Stopped'}
+                    icon={<Radio size={32} color={serviceStatus.freeradius === 'active' ? '#10b981' : '#f43f5e'} />}
+                    subtext={serviceStatus.freeradius === 'active' ? 'Service is healthy' : 'Service is down'}
+                    statusColor={serviceStatus.freeradius === 'active' ? '#10b981' : '#f43f5e'}
+                />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
@@ -117,12 +142,12 @@ const Dashboard = () => {
     );
 };
 
-const StatCard = ({ title, value, icon, subtext }) => (
+const StatCard = ({ title, value, icon, subtext, statusColor }) => (
     <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
             <h4 style={{ margin: '0 0 0.5rem 0', color: '#94a3b8', fontSize: '0.9rem', textTransform: 'uppercase' }}>{title}</h4>
             <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{value}</div>
-            {subtext && <div style={{ fontSize: '0.8em', color: '#10b981', marginTop: '4px' }}>{subtext}</div>}
+            {subtext && <div style={{ fontSize: '0.8em', color: statusColor || '#10b981', marginTop: '4px' }}>{subtext}</div>}
         </div>
         <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '16px' }}>
             {icon}

@@ -8,18 +8,20 @@ const verifyToken = require('../middleware/auth');
 /**
  * GET /api/acess-points
  * List all APs with active client counts from radacct
+ * Auto-registers unknown APs to database
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
         // 1. Get all known APs
         const [registeredAps] = await db.execute('SELECT * FROM access_points ORDER BY name');
 
-        // 2. Get active sessions from radacct (where stoptime is NULL)
-        // Group by calledstationid (which usually contains AP MAC)
-        const [activeSessions] = await db.execute(`
-            SELECT calledstationid, COUNT(*) as count 
+        // 2. Get unique AP MACs from ALL accounting records
+        // This ensures APs are registered even if no one is currently connected
+        const [allSessions] = await db.execute(`
+            SELECT calledstationid, 
+                   MAX(CASE WHEN acctstoptime IS NULL THEN 1 ELSE 0 END) as is_active,
+                   COUNT(CASE WHEN acctstoptime IS NULL THEN 1 END) as active_count
             FROM radacct 
-            WHERE acctstoptime IS NULL 
             GROUP BY calledstationid
         `);
 
@@ -28,35 +30,51 @@ router.get('/', verifyToken, async (req, res) => {
         const normalize = (mac) => mac ? mac.replace(/[^a-fA-F0-9]/g, '').toUpperCase() : '';
 
         const statsMap = {};
-        activeSessions.forEach(row => {
-            // CalledStationId format is often "MAC:SSID" or just "MAC"
-            // We'll extract the MAC part.
-            // Example: "00-11-22-33-44-55:MySSID"
+        allSessions.forEach(row => {
             const rawMac = row.calledstationid.split(':')[0];
             const mac = normalize(rawMac);
             if (mac) {
-                statsMap[mac] = row.count;
+                // If multiple SSIDs are used on the same AP, we aggregate the count
+                if (!statsMap[mac]) {
+                    statsMap[mac] = { active_clients: 0 };
+                }
+                statsMap[mac].active_clients += row.active_count || 0;
             }
         });
 
         const results = registeredAps.map(ap => ({
             ...ap,
-            active_clients: statsMap[normalize(ap.mac_address)] || 0
+            active_clients: statsMap[normalize(ap.mac_address)]?.active_clients || 0
         }));
 
-        // Optional: Include "Unknown/Unregistered" APs
+        // 4. Auto-register unknown APs (checking both historical and active)
         const registeredMacs = new Set(registeredAps.map(ap => normalize(ap.mac_address)));
 
-        for (const [mac, count] of Object.entries(statsMap)) {
+        for (const [mac, stats] of Object.entries(statsMap)) {
             if (!registeredMacs.has(mac)) {
-                // Add as unknown
-                results.push({
-                    id: null,
-                    name: 'Unknown AP',
-                    mac_address: mac.replace(/(.{2})/g, "$1-").slice(0, -1), // Format back to pretty
-                    location: 'Unregistered',
-                    active_clients: count
-                });
+                // Format MAC to AA-BB-CC-DD-EE-FF
+                const formattedMac = mac.match(/.{1,2}/g).join('-');
+
+                try {
+                    // Insert new AP with "Unknown AP" name
+                    const [insertResult] = await db.execute(
+                        'INSERT INTO access_points (mac_address, name, location) VALUES (?, ?, ?)',
+                        [formattedMac, 'Unknown AP', '']
+                    );
+
+                    // Add to results with the new ID
+                    results.push({
+                        id: insertResult.insertId,
+                        name: 'Unknown AP',
+                        mac_address: formattedMac,
+                        location: '',
+                        active_clients: stats.active_clients
+                    });
+                } catch (insertErr) {
+                    if (insertErr.code !== 'ER_DUP_ENTRY') {
+                        console.error('Failed to auto-register AP:', insertErr);
+                    }
+                }
             }
         }
 

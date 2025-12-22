@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Devices from './pages/Devices';
 import Users from './pages/Users';
 import AccessPoints from './pages/AccessPoints';
+import Footer from './components/Footer';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ const Layout = ({ children }) => {
       <div className="page-container">
         {children}
       </div>
+      <Footer />
     </>
   )
 }
