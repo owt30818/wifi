@@ -7,13 +7,14 @@ const OnlineUsers = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(30);
+    const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 30, totalPages: 0 });
 
-    const fetchSessions = async (silent = false) => {
+    const fetchSessions = async (silent = false, page = pagination.page) => {
         if (!silent) setIsLoading(true);
         try {
-            const res = await axios.get('/api/dashboard/online-users');
-            setSessions(res.data);
+            const res = await axios.get(`/api/dashboard/online-users?page=${page}&limit=${pagination.limit}`);
+            setSessions(res.data.data);
+            setPagination(res.data.pagination);
         } catch (err) {
             console.error('Failed to fetch online sessions', err);
         } finally {
@@ -22,11 +23,12 @@ const OnlineUsers = () => {
     };
 
     useEffect(() => {
-        fetchSessions();
-        const interval = setInterval(() => fetchSessions(true), 15000);
+        fetchSessions(false, currentPage);
+        const interval = setInterval(() => fetchSessions(true, currentPage), 15000);
         return () => clearInterval(interval);
-    }, []);
+    }, [currentPage]);
 
+    // Simple local filter for the current page (or we could implement server-side search)
     const filteredSessions = sessions.filter(s => {
         const term = searchTerm.toLowerCase();
         return (
@@ -38,10 +40,8 @@ const OnlineUsers = () => {
         );
     });
 
-    // Pagination
-    const totalPages = Math.ceil(filteredSessions.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentSessions = filteredSessions.slice(startIndex, startIndex + itemsPerPage);
+    const totalPages = pagination.totalPages;
+    const currentSessions = filteredSessions; // Locally filtered chunk
 
     return (
         <div>

@@ -36,16 +36,61 @@ router.get('/ssids', verifyToken, async (req, res) => {
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
-        // 1. Get all managed devices info from our metadata table
-        const [devices] = await db.execute('SELECT * FROM managed_devices ORDER BY created_at DESC');
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 30;
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+        const searchType = req.query.searchType || 'all';
+        const sortKey = req.query.sortKey || 'created_at';
+        const sortDir = req.query.sortDir || 'DESC';
 
-        // 2. For each device, check if it's currently allowed in radcheck
-        // Ideally we could do a JOIN if schema was unified, but here we might check separately 
-        // or just rely on the 'status' column in managed_devices IF we keep it in sync.
-        // Let's assume managed_devices.status is the SOURCE OF TRUTH for the UI, 
-        // and we ensure radcheck updates match it.
+        // Whitelist sort keys to prevent SQL injection
+        const allowedSortKeys = ['mac_address', 'alias', 'group_name', 'status', 'created_at'];
+        const finalSortKey = allowedSortKeys.includes(sortKey) ? sortKey : 'created_at';
+        const finalSortDir = sortDir.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-        res.json(devices);
+        let whereClause = '';
+        let params = [];
+
+        if (search) {
+            const term = `%${search}%`;
+            if (searchType === 'mac') {
+                whereClause = 'WHERE mac_address LIKE ?';
+                params = [term];
+            } else if (searchType === 'alias') {
+                whereClause = 'WHERE alias LIKE ?';
+                params = [term];
+            } else if (searchType === 'group') {
+                whereClause = 'WHERE group_name LIKE ?';
+                params = [term];
+            } else {
+                whereClause = 'WHERE mac_address LIKE ? OR alias LIKE ? OR group_name LIKE ?';
+                params = [term, term, term];
+            }
+        }
+
+        // 1. Get Total Count
+        const countQuery = `SELECT COUNT(*) as total FROM managed_devices ${whereClause}`;
+        const [[{ total }]] = await db.execute(countQuery, params);
+
+        // 2. Get Paginated Data
+        const dataQuery = `
+            SELECT * FROM managed_devices 
+            ${whereClause} 
+            ORDER BY ${finalSortKey} ${finalSortDir} 
+            LIMIT ? OFFSET ?
+        `;
+        const [devices] = await db.execute(dataQuery, [...params, limit, offset]);
+
+        res.json({
+            data: devices,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch devices' });

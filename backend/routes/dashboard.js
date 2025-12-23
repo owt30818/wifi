@@ -3,60 +3,69 @@ const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
 
+// Simple In-memory Cache for Stats
+const statsCache = {
+    data: null,
+    lastUpdate: 0,
+    ttl: 30 * 1000 // 30 seconds
+};
+
 router.get('/stats', verifyToken, async (req, res) => {
     try {
-        // 1. Count Total Managed Devices
-        const [totalDevs] = await db.execute('SELECT COUNT(*) as count FROM managed_devices');
+        const now = Date.now();
+        if (statsCache.data && (now - statsCache.lastUpdate < statsCache.ttl)) {
+            return res.json(statsCache.data);
+        }
+
+        // Parallel Execution of Count Queries
+        const [
+            [totalDevs],
+            [blockedDevs],
+            [onlineUsersRows],
+            [activeSessions],
+            [aps]
+        ] = await Promise.all([
+            db.execute('SELECT COUNT(*) as count FROM managed_devices'),
+            db.execute("SELECT COUNT(*) as count FROM managed_devices WHERE status='blocked'"),
+            db.execute('SELECT COUNT(*) as count FROM radacct WHERE acctstoptime IS NULL'),
+            db.execute('SELECT calledstationid FROM radacct WHERE acctstoptime IS NULL'),
+            db.execute('SELECT mac_address, name FROM access_points')
+        ]);
+
         const total = totalDevs[0].count;
-
-        // 2. Count Blocked Devices
-        const [blockedDevs] = await db.execute("SELECT COUNT(*) as count FROM managed_devices WHERE status='blocked'");
         const blocked = blockedDevs[0].count;
+        const online = onlineUsersRows.length > 0 ? onlineUsersRows[0].count : 0;
 
-        // 3. Count Active Sessions (Online Users) from radacct
-        const [onlineUsers] = await db.execute('SELECT COUNT(*) as count FROM radacct WHERE acctstoptime IS NULL');
-        const online = onlineUsers.length > 0 ? onlineUsers[0].count : 0; // Fix: onlineUsers could be inconsistent depending on driver version
-
-        // 4. AP Distribution (Group by Name)
-        // Join radacct with access_points on MAC address.
-        // - Extract MAC from calledstationid (format: "MAC:SSID" or "MAC")
-        // - Normalize MAC to match access_points format (e.g. AA-BB-...)
-
-        // Since we can't easily join on complex string manipulation in standard SQL without stored functions,
-        // we'll fetch active sessions and access_points, then aggregate in JS. 
-        // This is acceptable for small/medium scale (< few thousand APs).
-
-        const [activeSessions] = await db.execute('SELECT calledstationid FROM radacct WHERE acctstoptime IS NULL');
-        const [aps] = await db.execute('SELECT mac_address, name FROM access_points');
-
-        const apMap = new Map(); // MAC -> Name
+        // AP Distribution aggregation in JS
+        const apMap = new Map();
         aps.forEach(ap => {
-            // Normalize DB MAC just in case: AABB.. -> AA-BB..
-            // But we assume stored format is AA-BB-..
             apMap.set(ap.mac_address.replace(/-/g, '').toUpperCase(), ap.name);
         });
 
-        const dist = {}; // Name -> Count
-
+        const dist = {};
         activeSessions.forEach(session => {
-            const raw = session.calledstationid.split(':')[0]; // Get MAC part
+            const raw = session.calledstationid.split(':')[0];
             const cleanMac = raw.replace(/[^a-fA-F0-9]/g, '').toUpperCase();
-
             const name = apMap.get(cleanMac) || 'Unknown AP';
             dist[name] = (dist[name] || 0) + 1;
         });
 
-        // Convert to array for Chart.js
         const distribution = Object.entries(dist)
             .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count); // Sort by count desc
+            .sort((a, b) => b.count - a.count);
 
-        res.json({
+        const responseData = {
             total_devices: total,
             blocked_devices: blocked,
             online_users: online,
             ap_distribution: distribution
-        });
+        };
+
+        // Update Cache
+        statsCache.data = responseData;
+        statsCache.lastUpdate = now;
+
+        res.json(responseData);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Stats error' });
@@ -82,6 +91,14 @@ router.get('/status', verifyToken, async (req, res) => {
  */
 router.get('/online-users', verifyToken, async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 30;
+        const offset = (page - 1) * limit;
+
+        // 1. Get Total Count
+        const [[{ total }]] = await db.execute('SELECT COUNT(*) as total FROM radacct WHERE acctstoptime IS NULL');
+
+        // 2. Get Paginated Data
         const query = `
             SELECT 
                 r.username,
@@ -96,14 +113,23 @@ router.get('/online-users', verifyToken, async (req, res) => {
                 d.group_name,
                 d.status
             FROM radacct r
-            LEFT JOIN access_points ap ON REPLACE(SUBSTRING_INDEX(r.calledstationid, ':', 1), '-', '') COLLATE utf8mb4_general_ci = REPLACE(ap.mac_address, '-', '') COLLATE utf8mb4_general_ci
-            LEFT JOIN managed_devices d ON r.callingstationid COLLATE utf8mb4_general_ci = d.mac_address COLLATE utf8mb4_general_ci
+            LEFT JOIN access_points ap ON SUBSTRING_INDEX(r.calledstationid, ':', 1) = ap.mac_address
+            LEFT JOIN managed_devices d ON r.callingstationid = d.mac_address
             WHERE r.acctstoptime IS NULL
             ORDER BY r.acctstarttime DESC
+            LIMIT ? OFFSET ?
         `;
 
-        const [rows] = await db.execute(query);
-        res.json(rows);
+        const [rows] = await db.execute(query, [limit, offset]);
+        res.json({
+            data: rows,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch online users' });

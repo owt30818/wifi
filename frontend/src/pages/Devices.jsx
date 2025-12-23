@@ -35,7 +35,7 @@ const Devices = () => {
     // ... existing fetch logic ...
 
     const [showGroupModal, setShowGroupModal] = useState(false);
-    const [bulkGenericGroup, setBulkGenericGroup] = useState('');
+    const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 30, totalPages: 0 });
 
     const handleBulkGroupUpdate = async (e) => {
         e.preventDefault();
@@ -59,12 +59,23 @@ const Devices = () => {
         }
         setSortConfig({ key, direction });
         setSelectedDeviceIds([]); // Clear selection on sort
+        setCurrentPage(1); // Reset to first page on sort
     };
 
-    const fetchDevices = async () => {
+    const fetchDevices = async (page = currentPage, limit = itemsPerPage) => {
         try {
-            const res = await axios.get('/api/devices');
-            setDevices(res.data);
+            const res = await axios.get('/api/devices', {
+                params: {
+                    page,
+                    limit,
+                    search: searchTerm,
+                    searchType: searchType,
+                    sortKey: sortConfig.key,
+                    sortDir: sortConfig.direction
+                }
+            });
+            setDevices(res.data.data);
+            setPagination(res.data.pagination);
         } catch (err) {
             console.error(err);
         }
@@ -91,46 +102,14 @@ const Devices = () => {
 
     useEffect(() => {
         fetchDevices();
+    }, [currentPage, itemsPerPage, searchTerm, searchType, sortConfig]);
+
+    useEffect(() => {
         fetchSsids();
     }, []);
 
-    const sortedDevices = [...devices].filter(d => {
-        if (!searchTerm) return true;
-        const term = searchTerm.toLowerCase();
-
-        if (searchType === 'mac') {
-            return d.mac_address.toLowerCase().includes(term);
-        } else if (searchType === 'alias') {
-            return d.alias && d.alias.toLowerCase().includes(term);
-        } else if (searchType === 'group') {
-            return d.group_name && d.group_name.toLowerCase().includes(term);
-        } else {
-            // "all" mode
-            return d.mac_address.toLowerCase().includes(term) ||
-                (d.alias && d.alias.toLowerCase().includes(term)) ||
-                (d.group_name && d.group_name.toLowerCase().includes(term));
-        }
-    });
-
-    if (sortConfig.key) {
-        sortedDevices.sort((a, b) => {
-            let aVal = a[sortConfig.key] || '';
-            let bVal = b[sortConfig.key] || '';
-
-            // ... same sorting logic ...
-            if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-            if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-
-            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }
-
-    // Pagination Logic
-    const totalPages = Math.ceil(sortedDevices.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentItems = sortedDevices.slice(startIndex, startIndex + itemsPerPage);
+    const currentItems = devices;
+    const totalPages = pagination.totalPages;
 
     const handlePageChange = (page) => {
         setCurrentPage(page);
