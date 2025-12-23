@@ -35,6 +35,7 @@ const Devices = () => {
     // ... existing fetch logic ...
 
     const [showGroupModal, setShowGroupModal] = useState(false);
+    const [bulkGenericGroup, setBulkGenericGroup] = useState('');
     const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 30, totalPages: 0 });
 
     const handleBulkGroupUpdate = async (e) => {
