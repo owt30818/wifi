@@ -1,4 +1,4 @@
-# WiFi Admin Portal (v1.0)
+# WiFi Admin Portal (v1.0.1)
 
 A web-based administration portal for managing a FreeRADIUS server. Administrators can easily manage users, devices, and view network statistics through a modern dashboard.
 
@@ -45,10 +45,11 @@ cd backend
 npm install
 ```
 
-Create a `.env` file:
+Create a `.env` file (you can copy `.env.example` as a template):
 
 ```env
 PORT=3000
+APP_NAME="Wifi Admin Portal"
 DB_HOST=localhost
 DB_USER=radius
 DB_PASSWORD=radiuspass
@@ -65,6 +66,17 @@ Navigate to the `frontend` directory and install dependencies:
 ```bash
 cd frontend
 npm install
+```
+
+Create a `.env` file to customize the portal branding:
+
+```env
+VITE_APP_NAME="Your Custom WiFi Name"
+```
+
+Build and serve:
+
+```bash
 npm run build
 ```
 
