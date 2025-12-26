@@ -2,6 +2,17 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [1.0.1] - 2025-12-26
+
+### Fixed
+- **Browser Title Substitution**: Fixed a bug where `%VITE_APP_NAME%` was shown in the browser tab instead of the actual application name.
+- **Static Fallsback**: Added "WIFI Admin Portal" as a static fallback in `index.html`.
+
+### Improved
+- **Dynamic Title Management**: Implemented `useEffect` in `App.jsx` to dynamically update the document title from environment variables.
+
+---
+
 ## [1.0.0] - 2025-12-26
 
 ### Added

@@ -70,6 +70,10 @@ npm run build
 
 ## Changelog
 
+### v1.0.1
+- **Dynamic Title Fix**: Resolved issue where browser tab title displayed raw environment variable placeholders.
+- **Improved Branding Reliability**: Added fallback values and dynamic document title updates in React.
+
 ### v1.0.0
 - **Configurable Application Name**: Branding (e.g., "양서고등학교 WIFI") can now be changed via `VITE_APP_NAME` environment variable.
 - **Environment Templates**: Added `.env.example` to both frontend and backend for easier setup.
