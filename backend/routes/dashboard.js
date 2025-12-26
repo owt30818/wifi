@@ -94,12 +94,50 @@ router.get('/online-users', verifyToken, async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 30;
         const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+        const searchType = req.query.searchType || 'all';
+        const sortKey = req.query.sortKey || 'start_time';
+        const sortDir = req.query.sortDir || 'DESC';
+
+        // Whitelist sort keys to prevent SQL injection
+        const allowedSortKeys = ['username', 'mac_address', 'ip_address', 'ap_name', 'start_time', 'alias', 'group_name', 'status'];
+        const finalSortKey = allowedSortKeys.includes(sortKey) ? sortKey : 'start_time';
+        const finalSortDir = sortDir.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+        let whereClause = 'WHERE r.acctstoptime IS NULL';
+        let params = [];
+
+        if (search) {
+            const term = `%${search}%`;
+            if (searchType === 'mac') {
+                whereClause += ' AND r.callingstationid LIKE ?';
+                params = [term];
+            } else if (searchType === 'alias') {
+                whereClause += ' AND d.alias LIKE ?';
+                params = [term];
+            } else if (searchType === 'ip') {
+                whereClause += ' AND r.framedipaddress LIKE ?';
+                params = [term];
+            } else if (searchType === 'group') {
+                whereClause += ' AND d.group_name LIKE ?';
+                params = [term];
+            } else {
+                whereClause += ' AND (r.callingstationid LIKE ? OR d.alias LIKE ? OR r.framedipaddress LIKE ? OR d.group_name LIKE ? OR r.username LIKE ?)';
+                params = [term, term, term, term, term];
+            }
+        }
 
         // 1. Get Total Count
-        const [[{ total }]] = await db.execute('SELECT COUNT(*) as total FROM radacct WHERE acctstoptime IS NULL');
+        const countQuery = `
+            SELECT COUNT(*) as total 
+            FROM radacct r
+            LEFT JOIN managed_devices d ON r.callingstationid COLLATE utf8mb4_unicode_ci = d.mac_address
+            ${whereClause}
+        `;
+        const [[{ total }]] = await db.execute(countQuery, params);
 
-        // 2. Get Paginated Data
-        const query = `
+        // 2. Get Paginated & Sorted Data
+        const dataQuery = `
             SELECT 
                 r.username,
                 r.callingstationid as mac_address,
@@ -115,12 +153,12 @@ router.get('/online-users', verifyToken, async (req, res) => {
             FROM radacct r
             LEFT JOIN access_points ap ON SUBSTRING_INDEX(r.calledstationid, ':', 1) COLLATE utf8mb4_unicode_ci = ap.mac_address
             LEFT JOIN managed_devices d ON r.callingstationid COLLATE utf8mb4_unicode_ci = d.mac_address
-            WHERE r.acctstoptime IS NULL
-            ORDER BY r.acctstarttime DESC
+            ${whereClause}
+            ORDER BY ${finalSortKey} ${finalSortDir}
             LIMIT ? OFFSET ?
         `;
 
-        const [rows] = await db.execute(query, [limit, offset]);
+        const [rows] = await db.execute(dataQuery, [...params, limit, offset]);
         res.json({
             data: rows,
             pagination: {
