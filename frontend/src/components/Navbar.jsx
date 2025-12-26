@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Wifi, LogOut, LayoutDashboard, Smartphone, Users, Router } from 'lucide-react';
 
 const Navbar = () => {
+    const appName = import.meta.env.VITE_APP_NAME || 'WIFI Admin Portal';
     const { logout, user } = useAuth();
     const location = useLocation();
 
@@ -26,7 +27,7 @@ const Navbar = () => {
                 }}>
                     <Wifi size={24} color="white" />
                 </div>
-                <span style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'white' }}>양서고등학교 WIFI</span>
+                <span style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'white' }}>{appName}</span>
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
