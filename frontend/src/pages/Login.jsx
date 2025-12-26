@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
+    const appName = import.meta.env.VITE_APP_NAME || 'WIFI Admin Portal';
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -23,7 +24,7 @@ const Login = () => {
     return (
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', width: '100%' }}>
             <div className="glass-panel" style={{ padding: '3rem', width: '100%', maxWidth: '400px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>양서고등학교 WIFI</h2>
+                <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>{appName}</h2>
 
                 {error && (
                     <div style={{ background: 'rgba(244, 63, 94, 0.2)', color: '#fb7185', padding: '10px', borderRadius: '8px', marginBottom: '1rem', border: '1px solid rgba(244, 63, 94, 0.3)' }}>

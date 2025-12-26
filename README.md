@@ -1,4 +1,4 @@
-# WiFi Admin Portal (v0.8.11)
+# WiFi Admin Portal (v1.0)
 
 A web-based administration portal for managing a FreeRADIUS server. Administrators can easily manage users, devices, and view network statistics through a modern dashboard.
 
@@ -70,9 +70,12 @@ npm run build
 
 ## Changelog
 
+### v1.0.0
+- **Configurable Application Name**: Branding (e.g., "양서고등학교 WIFI") can now be changed via `VITE_APP_NAME` environment variable.
+- **Environment Templates**: Added `.env.example` to both frontend and backend for easier setup.
+- **Production Version**: Officially reached stable version 1.0.0.
+
 ### v0.8.11
-- **UI Fix**: Updated current version display in the footer.
-- **Maintenance**: General version bump to v0.8.11.
 
 ### v0.8.10
 - **Bug Fix**: Fixed a critical `ReferenceError` on the `/Devices` page where `bulkGenericGroup` was not defined, causing a blank page.

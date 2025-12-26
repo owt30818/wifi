@@ -2,6 +2,18 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [1.0.0] - 2025-12-26
+
+### Added
+- **Configurable Application Name**: The portal name can now be changed via the `VITE_APP_NAME` environment variable.
+- **Environment Variable Templates**: Added `.env.example` files to both frontend and backend.
+
+### Improved
+- **Production Version**: Officially reaching v1.0.0 with stability and security enhancements from previous iterations.
+- **Build Process Cleaner**: Optimized frontend build with configurable branding.
+
+---
+
 ## [0.8.2] - 2025-12-22
 
 ### Added

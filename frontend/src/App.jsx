@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
@@ -29,6 +30,11 @@ const Layout = ({ children }) => {
 }
 
 function App() {
+  useEffect(() => {
+    const appName = import.meta.env.VITE_APP_NAME || 'WIFI Admin Portal';
+    document.title = appName;
+  }, []);
+
   return (
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
