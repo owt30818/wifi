@@ -1,4 +1,4 @@
-# WiFi Admin Portal (v0.8.10)
+# WiFi Admin Portal (v0.8.11)
 
 A web-based administration portal for managing a FreeRADIUS server. Administrators can easily manage users, devices, and view network statistics through a modern dashboard.
 
@@ -69,6 +69,10 @@ npm run build
 ```
 
 ## Changelog
+
+### v0.8.11
+- **UI Fix**: Updated current version display in the footer.
+- **Maintenance**: General version bump to v0.8.11.
 
 ### v0.8.10
 - **Bug Fix**: Fixed a critical `ReferenceError` on the `/Devices` page where `bulkGenericGroup` was not defined, causing a blank page.

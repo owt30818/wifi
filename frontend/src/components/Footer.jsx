@@ -4,7 +4,7 @@ import { ShieldCheck, Server, Zap } from 'lucide-react';
 const Footer = () => {
     const [isApiHealthy, setIsApiHealthy] = useState(true);
     const currentYear = new Date().getFullYear();
-    const version = "v0.8.2";
+    const version = "v0.8.11";
 
     // Simple heartbeat/health check could be implemented here
     // For now, we'll assume it's connected if the app is running

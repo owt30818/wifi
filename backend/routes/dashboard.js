@@ -113,8 +113,8 @@ router.get('/online-users', verifyToken, async (req, res) => {
                 d.group_name,
                 d.status
             FROM radacct r
-            LEFT JOIN access_points ap ON SUBSTRING_INDEX(r.calledstationid, ':', 1) = ap.mac_address
-            LEFT JOIN managed_devices d ON r.callingstationid = d.mac_address
+            LEFT JOIN access_points ap ON SUBSTRING_INDEX(r.calledstationid, ':', 1) COLLATE utf8mb4_unicode_ci = ap.mac_address
+            LEFT JOIN managed_devices d ON r.callingstationid COLLATE utf8mb4_unicode_ci = d.mac_address
             WHERE r.acctstoptime IS NULL
             ORDER BY r.acctstarttime DESC
             LIMIT ? OFFSET ?
