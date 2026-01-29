@@ -2,6 +2,18 @@
 
 All notable changes to WiFi Admin Portal will be documented in this file.
 
+## [1.0.2] - 2026-01-29
+
+### Fixed
+- **CSV Export**: Fixed an issue where exporting devices only downloaded the current page's data. Now it correctly exports all devices matching the current filter.
+- **Excel Compatibility**: Added UTF-8 BOM to CSV exports to prevent character encoding issues (broken Korean characters) in Microsoft Excel.
+- **CSV Formatting**: Improved CSV generation to properly escape fields containing commas or quotes.
+
+### Improved
+- **UI Refinement**: Adjusted the Navbar font size and padding for a more compact and cleaner appearance.
+
+---
+
 ## [1.0.1] - 2025-12-26
 
 ### Fixed

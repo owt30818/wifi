@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Trash2, Lock, Unlock, Plus, Search, Upload, Edit2 } from 'lucide-react';
 import { formatMac } from '../utils/macUtils';
+import { useAuth } from '../context/AuthContext';
 
 const Devices = () => {
+    const { user, isAdmin } = useAuth();
     const [devices, setDevices] = useState([]);
     const [form, setForm] = useState({ mac_address: '', alias: '', group_name: '', allowed_ssids: '' });
     const [showModal, setShowModal] = useState(false);
@@ -23,6 +25,10 @@ const Devices = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('all'); // all | mac | alias | group
+
+    // Options for dropdowns
+    const [groupOptions, setGroupOptions] = useState([]);
+    const [ssidOptions, setSsidOptions] = useState([]);
 
     // Pagination & Selection
     const [currentPage, setCurrentPage] = useState(1);
@@ -107,6 +113,9 @@ const Devices = () => {
 
     useEffect(() => {
         fetchSsids();
+        // Fetch dropdown options
+        axios.get('/api/settings/groups').then(res => setGroupOptions(res.data)).catch(() => { });
+        axios.get('/api/settings/ssids').then(res => setSsidOptions(res.data)).catch(() => { });
     }, []);
 
     const currentItems = devices;
@@ -191,35 +200,66 @@ const Devices = () => {
         e.target.value = '';
     };
 
-    const handleExport = () => {
-        if (devices.length === 0) {
-            alert('No devices to export');
-            return;
+    const handleExport = async () => {
+        try {
+            // Fetch all devices matching current filter
+            const res = await axios.get('/api/devices', {
+                params: {
+                    all: 'true',
+                    search: searchTerm,
+                    searchType: searchType,
+                    sortKey: sortConfig.key,
+                    sortDir: sortConfig.direction
+                }
+            });
+            const allDevices = res.data.data;
+
+            if (allDevices.length === 0) {
+                alert('No devices to export');
+                return;
+            }
+
+            // CSV Header
+            const headers = ['MAC Address', 'Alias', 'Group', 'Allowed SSIDs', 'Status', 'Added Date'];
+
+            // CSV Helper to escape fields
+            const escapeCsvField = (field) => {
+                if (field === null || field === undefined) return '';
+                const stringField = String(field);
+                // If contains comma, double quote, or newline, wrap in quotes and escape internal quotes
+                if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+                    return `"${stringField.replace(/"/g, '""')}"`;
+                }
+                return stringField;
+            };
+
+            // CSV Rows
+            const rows = allDevices.map(d => {
+                const mac = escapeCsvField(d.mac_address);
+                const alias = escapeCsvField(d.alias || '');
+                const group = escapeCsvField(d.group_name || '');
+                const ssids = escapeCsvField(d.allowed_ssids || '');
+                const status = escapeCsvField(d.status);
+                const date = new Date(d.created_at).toISOString().split('T')[0];
+                return [mac, alias, group, ssids, status, date].join(',');
+            });
+
+            // Add BOM for Excel UTF-8 compatibility
+            const bom = '\uFEFF';
+            const csvContent = bom + [headers.join(','), ...rows].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `devices_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error(err);
+            alert('Export failed due to server error');
         }
-
-        // CSV Header
-        const headers = ['MAC Address,Alias,Group,Allowed SSIDs,Status,Added Date'];
-
-        // CSV Rows
-        const rows = devices.map(d => {
-            const mac = d.mac_address;
-            const alias = `"${(d.alias || '').replace(/"/g, '""')}"`;
-            const group = `"${(d.group_name || '').replace(/"/g, '""')}"`;
-            const ssids = `"${(d.allowed_ssids || '').replace(/"/g, '""')}"`;
-            const status = d.status;
-            const date = new Date(d.created_at).toISOString().split('T')[0];
-            return `${mac},${alias},${group},${ssids},${status},${date}`;
-        });
-
-        const csvContent = [headers, ...rows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `devices_export_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     const handleBulkParse = (e) => {
@@ -401,16 +441,22 @@ const Devices = () => {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1>Managed Devices</h1>
-                <button className="glass-button" style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={openAddModal}>
-                    <Plus size={20} /> Add Device
-                </button>
-                <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '12px' }} onClick={openBulkModal}>
-                    <Upload size={20} /> Bulk Add
-                </button>
-                <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: '12px' }} onClick={handleExport}>
-                    <Upload size={20} style={{ transform: 'rotate(180deg)' }} /> Export CSV
-                </button>
+                <h1>{isAdmin() ? 'Managed Devices' : 'My Devices'}</h1>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="glass-button" style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={openAddModal}>
+                        <Plus size={20} /> Register Device
+                    </button>
+                    {isAdmin() && (
+                        <>
+                            <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={openBulkModal}>
+                                <Upload size={20} /> Bulk Add
+                            </button>
+                            <button className="glass-button secondary" style={{ display: 'flex', gap: '8px', alignItems: 'center' }} onClick={handleExport}>
+                                <Upload size={20} style={{ transform: 'rotate(180deg)' }} /> Export CSV
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Controls Bar */}
@@ -474,7 +520,7 @@ const Devices = () => {
 
                 {/* Bulk Actions */}
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    {selectedDeviceIds.length > 0 && (
+                    {isAdmin() && selectedDeviceIds.length > 0 && (
                         <>
                             <button className="glass-button secondary" onClick={() => handleBulkStatus('allowed')} style={{ color: '#86efac', borderColor: 'rgba(34, 197, 94, 0.3)' }}>
                                 <Unlock size={16} /> Allow ({selectedDeviceIds.length})
@@ -490,9 +536,11 @@ const Devices = () => {
                             </button>
                         </>
                     )}
-                    <button className="glass-button danger" onClick={handleDeleteAll}>
-                        Delete All
-                    </button>
+                    {isAdmin() && (
+                        <button className="glass-button danger" onClick={handleDeleteAll}>
+                            Delete All
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -537,7 +585,18 @@ const Devices = () => {
                                     />
                                 </td>
                                 <td style={{ fontFamily: 'monospace', letterSpacing: '1px', padding: '0.2rem 0.8rem' }}>{device.mac_address}</td>
-                                <td style={{ padding: '0.2rem 0.8rem', fontWeight: '500' }}>{device.alias || '-'}</td>
+                                <td style={{ padding: '0.2rem 0.8rem', fontWeight: '500' }} title={device.alias || ''}>
+                                    {device.owner_name ? (
+                                        <span>
+                                            {device.owner_name}
+                                            {device.owner_grade && (
+                                                <span style={{ color: '#94a3b8', fontWeight: 400, marginLeft: '6px', fontSize: '0.85em' }}>
+                                                    ({device.owner_grade}학년 {device.owner_class}반 {device.owner_number}번)
+                                                </span>
+                                            )}
+                                        </span>
+                                    ) : (device.alias || '-')}
+                                </td>
                                 <td style={{ padding: '0.2rem 0.8rem', color: '#94a3b8' }}>{device.group_name || '-'}</td>
                                 <td style={{ fontSize: '0.9em', color: '#94a3b8', padding: '0.2rem 0.8rem' }}>
                                     {device.allowed_ssids ? device.allowed_ssids.split(',').map((s, i) => (
@@ -561,6 +620,7 @@ const Devices = () => {
                                             style={{ padding: '4px', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                             onClick={() => toggleStatus(device.id, device.status)}
                                             title={device.status === 'allowed' ? 'Block Device' : 'Unblock Device'}
+                                            disabled={!isAdmin()}
                                         >
                                             {device.status === 'allowed' ? <Lock size={14} /> : <Unlock size={14} />}
                                         </button>
@@ -571,13 +631,15 @@ const Devices = () => {
                                         >
                                             <Edit2 size={14} />
                                         </button>
-                                        <button
-                                            className="glass-button danger"
-                                            style={{ padding: '4px', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                            onClick={() => handleDelete(device.id)}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
+                                        {isAdmin() && (
+                                            <button
+                                                className="glass-button danger"
+                                                style={{ padding: '4px', borderRadius: '4px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                onClick={() => handleDelete(device.id)}
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 </td>
                             </tr>
@@ -667,9 +729,11 @@ const Devices = () => {
                                     className="glass-input"
                                     placeholder="AA-BB-CC-DD-EE-FF"
                                     required
+                                    disabled={editMode && !isAdmin()}
                                     value={form.mac_address}
                                     onChange={e => setForm({ ...form, mac_address: formatMac(e.target.value) })}
                                 />
+                                {editMode && !isAdmin() && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>MAC 주소는 변경할 수 없습니다.</div>}
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label>Alias (Friendly Name)</label>
@@ -677,21 +741,49 @@ const Devices = () => {
                                     value={form.alias} onChange={e => setForm({ ...form, alias: e.target.value })}
                                 />
                             </div>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label>Group Name (Optional)</label>
-                                <input className="glass-input" placeholder="Office, Guest, etc."
-                                    value={form.group_name} onChange={e => setForm({ ...form, group_name: e.target.value })}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '2rem' }}>
-                                <label>Allowed SSIDs (Optional)</label>
-                                <input className="glass-input" placeholder="Staff_WiFi, Guest (Leave empty for All)"
-                                    value={form.allowed_ssids} onChange={e => setForm({ ...form, allowed_ssids: e.target.value })}
-                                />
-                                <div style={{ fontSize: '0.8em', color: '#64748b', marginTop: '4px' }}>
-                                    Comma separated. If set, device can ONLY connect to these SSIDs.
+                            {isAdmin() && (
+                                <>
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label>그룹명</label>
+                                        <select className="glass-input" value={form.group_name} onChange={e => setForm({ ...form, group_name: e.target.value })}>
+                                            <option value="">선택 안함</option>
+                                            {groupOptions.map(g => <option key={g} value={g}>{g}</option>)}
+                                        </select>
+                                        <input className="glass-input" style={{ marginTop: '8px' }} placeholder="또는 새 그룹명 입력"
+                                            value={groupOptions.includes(form.group_name) ? '' : form.group_name}
+                                            onChange={e => setForm({ ...form, group_name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <label>허용 SSID</label>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                                            {ssidOptions.map(ssid => (
+                                                <label key={ssid} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '4px 10px', background: form.allowed_ssids.split(',').map(s => s.trim()).includes(ssid) ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.05)', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    <input type="checkbox" checked={form.allowed_ssids.split(',').map(s => s.trim()).includes(ssid)}
+                                                        onChange={e => {
+                                                            const current = form.allowed_ssids.split(',').map(s => s.trim()).filter(s => s);
+                                                            if (e.target.checked) {
+                                                                setForm({ ...form, allowed_ssids: [...current, ssid].join(',') });
+                                                            } else {
+                                                                setForm({ ...form, allowed_ssids: current.filter(s => s !== ssid).join(',') });
+                                                            }
+                                                        }}
+                                                    />
+                                                    {ssid}
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div style={{ fontSize: '0.8em', color: '#64748b', marginTop: '8px' }}>
+                                            선택하지 않으면 모든 SSID 허용
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            {!isAdmin() && (
+                                <div style={{ marginBottom: '2rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+                                    <p>※ 관리자 정책에 의해 지정된 SSID 및 그룹이 자동으로 적용됩니다.</p>
                                 </div>
-                            </div>
+                            )}
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                                 <button type="button" className="glass-button secondary" onClick={() => setShowModal(false)}>Cancel</button>
                                 <button type="submit" className="glass-button">Save Device</button>
