@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const verifyToken = require('../middleware/auth');
+const { verifyToken, isAdmin } = require('../middleware/auth');
 
 // Simple In-memory Cache for Stats
 const statsCache = {
@@ -10,7 +10,7 @@ const statsCache = {
     ttl: 30 * 1000 // 30 seconds
 };
 
-router.get('/stats', verifyToken, async (req, res) => {
+router.get('/stats', verifyToken, isAdmin, async (req, res) => {
     try {
         const now = Date.now();
         if (statsCache.data && (now - statsCache.lastUpdate < statsCache.ttl)) {
@@ -73,7 +73,7 @@ router.get('/stats', verifyToken, async (req, res) => {
 });
 
 // Service Status Check
-router.get('/status', verifyToken, async (req, res) => {
+router.get('/status', verifyToken, isAdmin, async (req, res) => {
     const { exec } = require('child_process');
 
     exec('systemctl is-active freeradius', (error, stdout) => {
@@ -89,7 +89,7 @@ router.get('/status', verifyToken, async (req, res) => {
  * GET /api/dashboard/online-users
  * Fetch detailed active session information
  */
-router.get('/online-users', verifyToken, async (req, res) => {
+router.get('/online-users', verifyToken, isAdmin, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 30;

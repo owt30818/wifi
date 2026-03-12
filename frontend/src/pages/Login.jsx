@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
     const appName = import.meta.env.VITE_APP_NAME || 'WIFI Admin Portal';
@@ -13,11 +13,11 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        const success = await login(username, password);
-        if (success) {
+        const result = await login(username, password);
+        if (result.success) {
             navigate('/');
         } else {
-            setError('Invalid credentials');
+            setError(result.error);
         }
     };
 
@@ -58,6 +58,10 @@ const Login = () => {
                     <button type="submit" className="glass-button" style={{ width: '100%' }}>
                         Sign In
                     </button>
+
+                    <div style={{ marginTop: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+                        계정이 없으신가요? <Link to="/signup" style={{ color: '#3b82f6', textDecoration: 'none' }}>회원가입</Link>
+                    </div>
                 </form>
             </div>
         </div>

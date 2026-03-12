@@ -17,4 +17,21 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-module.exports = verifyToken;
+const isAdmin = (req, res, next) => {
+    // Both super_admin and sub_admin are considered "admins" for general access
+    if (req.user && (req.user.role === 'super_admin' || req.user.role === 'sub_admin' || req.user.role === 'admin')) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Access denied. Admin role required.' });
+    }
+};
+
+const isSuperAdmin = (req, res, next) => {
+    if (req.user && (req.user.role === 'super_admin' || req.user.role === 'admin')) {
+        next();
+    } else {
+        res.status(403).json({ error: 'Access denied. Super Admin role required.' });
+    }
+};
+
+module.exports = { verifyToken, isAdmin, isSuperAdmin };

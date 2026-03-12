@@ -3,14 +3,14 @@ const router = express.Router();
 const db = require('../db');
 
 // Middleware
-const verifyToken = require('../middleware/auth');
+const { verifyToken, isAdmin } = require('../middleware/auth');
 
 /**
  * GET /api/acess-points
  * List all APs with active client counts from radacct
  * Auto-registers unknown APs to database
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, isAdmin, async (req, res) => {
     try {
         // 1. Get all known APs
         const [registeredAps] = await db.execute('SELECT * FROM access_points ORDER BY name');
@@ -89,7 +89,7 @@ router.get('/', verifyToken, async (req, res) => {
  * POST /api/access-points
  * Register a new AP
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, isAdmin, async (req, res) => {
     let { mac_address, name, location } = req.body;
     if (!mac_address || !name) return res.status(400).json({ error: 'MAC and Name are required' });
 
@@ -114,7 +114,7 @@ router.post('/', verifyToken, async (req, res) => {
  * PUT /api/access-points/:id
  * Update AP details
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
     const { id } = req.params;
     const { name, location } = req.body;
 
@@ -133,7 +133,7 @@ router.put('/:id', verifyToken, async (req, res) => {
  * DELETE /api/access-points/:id
  * Delete AP
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     const { id } = req.params;
     try {
         await db.execute('DELETE FROM access_points WHERE id = ?', [id]);

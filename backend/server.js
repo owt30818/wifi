@@ -9,6 +9,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
 const accessPointsRouter = require('./routes/access_points');
 const portalRoutes = require('./routes/portal');
+const invitationsRouter = require('./routes/invitations');
 const path = require('path');
 const cluster = require('cluster');
 const os = require('os');
@@ -81,6 +82,8 @@ if (cluster.isMaster) {
     app.use('/api/dashboard', apiLimiter, dashboardRoutes);
     app.use('/api/users', apiLimiter, userRoutes);
     app.use('/api/access-points', apiLimiter, accessPointsRouter);
+    app.use('/api/invitations', apiLimiter, invitationsRouter);
+    app.use('/api/settings', apiLimiter, require('./routes/settings'));
 
     // Health Check
     app.get('/api/health', (req, res) => {
